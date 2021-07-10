@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
     app.setOrganizationDomain("rn7s2.cn");
     app.setApplicationName("Medical Information System");
 
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF8"));
+
     QSettings ini("settings.ini", QSettings::IniFormat);
     ini.setIniCodec("UTF-8");
     if(!ini.contains("User/type")) {
@@ -38,7 +40,7 @@ int main(int argc, char *argv[])
     QString username = ini.value("Server/username").toString();
     QString password = ini.value("Server/password").toString();
 
-    db = QSqlDatabase::addDatabase("QMARIADB");
+    db = QSqlDatabase::addDatabase("QMYSQL");
     db.setHostName(server);
     db.setPort(port);
     db.setDatabaseName(db_name);

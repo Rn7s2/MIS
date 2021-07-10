@@ -10,6 +10,7 @@ QuickSearchDialog::QuickSearchDialog(QWidget *parent) :
     ui->setupUi(this);
 
     m_id = QString();
+    this->num = 0;
 
     ui->tableWidget_1->setColumnCount(5);
 
@@ -79,5 +80,6 @@ void QuickSearchDialog::on_lineEdit_1_textChanged(const QString &str)
 void QuickSearchDialog::on_tableWidget_1_itemDoubleClicked(QTableWidgetItem *item)
 {
     m_id = ui->tableWidget_1->item(item->row(), 0)->text();
+    this->num = ui->tableWidget_1->item(item->row(), 3)->text().toInt();
     this->accept();
 }

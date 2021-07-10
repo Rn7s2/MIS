@@ -8,6 +8,7 @@
 #include "stockeraddexistingdialog.h"
 #include "stockermedicinedetaildialog.h"
 #include <QtSql>
+#include <QFileDialog>
 #include <QMessageBox>
 
 StockerWindow::StockerWindow(QWidget *parent) :
@@ -154,6 +155,8 @@ void StockerWindow::on_pushButton_5_clicked()
 void StockerWindow::on_pushButton_6_clicked()
 {
     QuickSearchDialog dialog(this);
+    dialog.setWindowFlags(Qt::Window);
+    dialog.setWindowState(Qt::WindowMaximized);
     if(dialog.exec() != QDialog::Accepted)
         return;
     StockerModifyDialog modify(dialog.m_id, this);
@@ -161,8 +164,95 @@ void StockerWindow::on_pushButton_6_clicked()
 }
 
 // 统计表单
+// 导出到Excel.csv功能
 void StockerWindow::on_pushButton_7_clicked()
 {
-    // 增加导出到Excel.csv功能
-    QMessageBox::information(this, "功能未实现", "功能未实现");
+    QSqlQuery query;
+    if(!query.exec("SELECT * FROM medicine;")) {
+        QMessageBox::critical(this, "数据库错误17", query.lastError().text());
+        return;
+    }
+
+    QString file_name = QFileDialog::getSaveFileName(this,
+                                                     "保存文件",
+                                                     QDir::homePath()
+                                                     + QDir::separator()
+                                                     + "Desktop",
+                                                     "*.csv");
+    if(file_name.isEmpty()) {
+        QMessageBox::information(this,
+                                 "错误",
+                                 "未指明保存文件的位置");
+        return;
+    }
+    QFile file(file_name);
+    file.open(QIODevice::ReadWrite | QIODevice::Truncate);
+    QTextStream out(&file);
+    out.setCodec("cp936");
+
+    out << QString("名称,");
+    out << QString("条码,");
+    out << QString("价格,");
+    out << QString("数量,");
+    out << QString("保质期,");
+    out << QString("用法用量") << endl;
+
+    while(query.next()) {
+        QString name = query.value(2).toString();
+        QString code = query.value(1).toString();
+        QString price = query.value(3).toString();
+        QString number = query.value(4).toString();
+        QString expiration = query.value(5).toString();
+        QString dosage = query.value(6).toString();
+
+        out << name << ',';
+        out << code << ',';
+        out << price << ',';
+        out << number << ',';
+        out << expiration << ',';
+        out << dosage << endl;
+    }
+    file.close();
+}
+
+// 旧药出库
+void StockerWindow::on_pushButton_8_clicked()
+{
+    // 修改medicine表中的number
+    // 并且在m_xx表中增加出库项
+    QuickSearchDialog dialog(this);
+    dialog.setWindowFlags(Qt::Window);
+    dialog.setWindowState(Qt::WindowMaximized);
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+    StockerAddExistingDialog sub(this);
+    if(sub.exec() != QDialog::Accepted)
+        return;
+    int cur_num = dialog.num;
+    int out_num = sub.num;
+
+    if(cur_num < out_num) {
+        QMessageBox::critical(this, "错误",
+                              "现有药品数量不足");
+        return;
+    }
+
+    QSqlQuery query;
+    QString sql = QString("UPDATE medicine "
+                          "SET number = number - %1 "
+                          "WHERE id = %2").arg(QString::number(out_num), dialog.m_id);
+    if(!query.exec(sql)) {
+        QMessageBox::critical(this, "数据库错误10", query.lastError().text());
+        return;
+    }
+
+    QString record_table = QString("m_%1").arg(dialog.m_id);
+    sql = QString("INSERT INTO %1 (date, number) "
+                  "VALUES ('%2', -%3)").arg(record_table,
+                                         QDate::currentDate().toString(Qt::DateFormat::ISODate),
+                                         QString::number(out_num));
+    if(!query.exec(sql)) {
+        QMessageBox::critical(this, "数据库错误11", query.lastError().text());
+        return;
+    }
 }

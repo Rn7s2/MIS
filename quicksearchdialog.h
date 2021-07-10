@@ -18,6 +18,7 @@ public:
     ~QuickSearchDialog();
 
     QString m_id;
+    int num;
 
 private slots:
     void on_pushButton_1_clicked();
